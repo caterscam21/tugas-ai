@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerjakan Tugas VIP AI</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header Navigasi Link Tugas */
+        .app-header {
+            background: #ff4b4b;
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+        .app-header input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+            outline: none;
+        }
+        .app-header button {
+            background: white;
+            color: #ff4b4b;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Area Tampilan Web Tugas */
+        #browserFrame {
+            flex: 1;
+            border: none;
+            width: 100%;
+            background: white;
+        }
+
+        /* Tombol Mengambang Utama (Floating Button) */
+        #floatingTrigger {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 99999;
+            background: #ff4b4b;
+            color: white;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #floatingTrigger:active {
+            transform: scale(0.9);
+        }
+
+        /* Panel Menu Vertikal (Mirip Foto) */
+        #menuContainer {
+            position: fixed;
+            bottom: 90px;
+            right: 25px;
+            width: 260px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 99998;
+            display: none;
+            flex-direction: column;
+            padding: 12px;
+            border: 2px solid #ff4b4b;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            background: #fff5f5;
+            color: #d32f2f;
+            border: 1px solid #ffd8d8;
+            padding: 11px 14px;
+            margin: 5px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+        .menu-item:hover {
+            background: #ff4b4b;
+            color: white;
+        }
+
+        /* Mode Samaran Toggle Container */
+        .stealth-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f3f5;
+            padding: 10px 14px;
+            margin: 5px 0;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* Modal Popup Hasil AI */
+        #resultModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 88%;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: white;
+            padding: 20px;
+            z-index: 100000;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: none;
+        }
+        #resultModal h3 {
+            margin-top: 0;
+            color: #ff4b4b;
+        }
+        #resultContent {
+            white-space: pre-wrap;
+            font-family: sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+        .close-btn {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            background: #ff4b4b;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Bar Navigasi Link -->
+    <div class="app-header">
+        <input type="text" id="urlInput" placeholder="Tempel link tugas guru (cth: forms.gle/...)">
+        <button onclick="loadLink()">Buka</button>
+    </div>
+
+    <!-- Frame Web Tugas -->
+    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+
+    <!-- Tombol Melayang Utama -->
+    <div id="floatingTrigger" onclick="toggleMenu()">🤖</div>
+
+    <!-- Panel Menu Pilihan (Sesuai Screenshot) -->
+    <div id="menuContainer">
+        <div style="font-weight:bold; color:#ff4b4b; text-align:center; margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid #eee;">✨ Kerjakan Tugas VIP</div>
+        
+        <div class="menu-item" onclick="jalankanAI('jawab')">✨ Jawab soal otomatis</div>
+        <div class="menu-item" onclick="jalankanAI('ai_fill')">📝 Jawaban diisi AI</div>
+        <div class="menu-item" onclick="jalankanAI('kkm')">⭐ Auto nilai di atas KKM</div>
+        <div class="menu-item" onclick="jalankanAI('penjelasan')">📖 Penjelasan lengkap</div>
+        <div class="menu-item" onclick="bukaChatGPTWeb()">💬 Buka ChatGPT</div>
+        
+        <div class="stealth-box">
+            <span>🕵️ Mode samaran</span>
+            <input type="checkbox" id="stealthCheck" onchange="toggleStealth(this)" style="cursor:pointer; width:18px; height:18px;">
+        </div>
+
+        <div class="menu-item" onclick="jalankanAI('scan')">📷 Scan Soal / Layar</div>
+        <div class="menu-item" onclick="jalankanAI('tutor')">🤖 Tutor AI</div>
+        <div class="menu-item" onclick="jalankanAI('tanya')">🧠 Tanya AI</div>
+        <div class="menu-item" onclick="jalankanAI('cek')">📋 Cek Jawaban</div>
+        <div class="menu-item" onclick="jalankanAI('ringkas')">📚 Ringkas Materi</div>
+    </div>
+
+    <!-- Modal Hasil AI -->
+    <div id="resultModal">
+        <h3>✨ Hasil Asisten AI</h3>
+        <div id="resultContent">Memproses jawaban...</div>
+        <button class="close-btn" onclick="tutupModal()">Tutup</button>
+    </div>
+
+    <script>
+        // 🔑 API Key Anda yang sudah otomatis tertanam permanen
+        const API_KEY = 'Sk-proj-tXEfYbDTTLCB0D5b_RuLzM2esNeoeFz41w7p8Gjm8JCtm2aQ_2ubU9M_tWEfWvkCmbs6wl8m0UT3BlbkFJl7n_5AGdGNFsEO6ihX6HYZ9G1zOUXlXkWu5nErXu8eN2Q0WNj7J2GKFlfiujhC0iBy1s3KiSkA';
+
+        function loadLink() {
+            let url = document.getElementById('urlInput').value.trim();
+            if(!url) return;
+            if(!url.startsWith('http')) url = 'https://' + url;
+            document.getElementById('browserFrame').src = url;
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('menuContainer');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function toggleStealth(checkbox) {
+            const menu = document.getElementById('menuContainer');
+            const btn = document.getElementById('floatingTrigger');
+            if(checkbox.checked) {
+                menu.style.opacity = '0.2';
+                btn.style.opacity = '0.2';
+            } else {
+                menu.style.opacity = '1';
+                btn.style.opacity = '1';
+            }
+        }
+
+        function bukaChatGPTWeb() {
+            toggleMenu();
+            document.getElementById('urlInput').value = 'https://chatgpt.com';
+            loadLink();
+        }
+
+        async function jalankanAI(tipe) {
+            toggleMenu();
+            
+            // Coba ambil teks dari iframe tugas, jika diblokir gunakan kotak dialog input manual
+            let soalTeks = "";
+            try {
+                const frame = document.getElementById('browserFrame');
+                soalTeks = frame.contentDocument.body.innerText;
+            } catch(e) {
+                soalTeks = "";
+            }
+
+            if (!soalTeks || soalTeks.length < 15) {
+                soalTeks = prompt("Karena halaman tugas dilindungi, silakan salin dan tempel (paste) teks soal dari guru di sini:");
+                if(!soalTeks) return;
+            }
+
+            document.getElementById('resultModal').style.display = 'block';
+            document.getElementById('resultContent').innerText = 'Sedang dianalisis oleh AI...';
+
+            let instruksi = 'Berikan jawaban terbaik dan akurat.';
+            if (tipe === 'jawab' || tipe === 'ai_fill') instruksi = 'Berikan kunci jawaban instan dan akurat untuk soal-soal berikut secara berurutan.';
+            if (tipe === 'kkm') instruksi = 'Berikan jawaban dengan tingkat akurasi sempurna agar nilainya di atas KKM.';
+            if (tipe === 'penjelasan') instruksi = 'Berikan jawaban beserta penjelasan logis yang lengkap.';
+            if (tipe === 'scan' || tipe === 'tanya') instruksi = 'Analisis soal berikut dan berikan jawaban yang tepat.';
+            if (tipe === 'tutor') instruksi = 'Bertindaklah sebagai tutor profesional dan bimbing penyelesaian soal ini.';
+            if (tipe === 'cek') instruksi = 'Periksa kebenaran dari soal dan pilihan jawaban berikut.';
+            if (tipe === 'ringkas') instruksi = 'Buat ringkasan materi dan poin penting dari teks berikut.';
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: 'Anda adalah asisten cerdas untuk menyelesaikan tugas akademik sekolah.' },
+                            { role: 'user', content: `${instruksi}\n\nTeks Soal:\n${soalTeks}` }
+                        ],
+                        temperature: 0.2
+                    })
+                });
+
+                const data = await response.json();
+                if(data.error) {
+                    document.getElementById('resultContent').innerText = 'Error API: ' + data.error.message;
+                    return;
+                }
+
+                document.getElementById('resultContent').innerText = data.choices[0].message.content;
+
+            } catch(err) {
+                document.getElementById('resultContent').innerText = 'Gagal terhubung ke server: ' + err.message;
+            }
+        }
+
+        function tutupModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
