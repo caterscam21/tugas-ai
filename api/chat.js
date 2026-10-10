@@ -1,6 +1,5 @@
-const fetch = require('node-fetch');
-
 exports.handler = async (event, context) => {
+  // Hanya menerima method POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
@@ -24,9 +23,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Menggunakan model Gemini terbaru (Gemini 2.5 Flash)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Menggunakan endpoint Gemini 1.5 Flash resmi (stabil & gratis)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
+    // Menggunakan fetch bawaan Netlify (tidak perlu require node-fetch)
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,23 +44,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Periksa apakah candidates ada dan valid
-    const candidate = data.candidates?.[0];
-    if (!candidate || !candidate.content?.parts?.[0]?.text) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          result: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
-          answer: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
-          text: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
-          choices: [{ text: "Respon kosong", message: { content: "Maaf, respon dari AI kosong atau diblokir." } }]
-        })
-      };
-    }
+    // Ambil jawaban dari Gemini secara aman
+    const aiAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, AI tidak memberikan respons.';
 
-    const aiAnswer = candidate.content.parts[0].text;
-
+    // Kirim format lengkap agar langsung dibaca oleh index.html
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
