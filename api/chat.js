@@ -22,10 +22,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Menggunakan gemini-2.5-flash yang sangat stabil
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Menggunakan gemini-3.8-flash sesuai instruksi error Google
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
-    // Proteksi timeout 8 detik agar tidak hang selamanya
+    // Proteksi timeout 8 detik
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
