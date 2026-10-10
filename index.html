@@ -22,7 +22,7 @@
             background: #6366f1; color: white; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-size: 24px; cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 9999; user-select: none;
-            transition: transform 0.2s;
+            transition: transform 0.2s, opacity 0.2s;
         }
         #floatingTrigger:active { transform: scale(0.9); }
 
@@ -32,6 +32,7 @@
             background: #1e1e1e; border: 1px solid #333; border-radius: 12px;
             padding: 10px; display: none; flex-direction: column; gap: 6px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 9998;
+            transition: opacity 0.2s;
         }
         .menu-item {
             padding: 10px 12px; background: #2a2a2a; border-radius: 6px; font-size: 13px;
@@ -45,13 +46,13 @@
         /* Modal Hasil AI */
         #resultModal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 400px; max-height: 80vh; background: #1e1e1e;
+            width: 90%; max-width: 450px; max-height: 80vh; background: #1e1e1e;
             border: 1px solid #444; border-radius: 12px; padding: 16px; display: none;
             flex-direction: column; z-index: 10000; box-shadow: 0 12px 32px rgba(0,0,0,0.8);
         }
         #resultModal h3 { font-size: 16px; margin-bottom: 10px; color: #818cf8; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        #resultContent { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px; background: #121212; padding: 10px; border-radius: 6px; border: 1px solid #333; }
-        .close-btn { padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
+        #resultContent { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px; background: #121212; padding: 12px; border-radius: 6px; border: 1px solid #333; }
+        .close-btn { padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
@@ -76,10 +77,10 @@
         <div class="menu-item" onclick="jalankanAI('ai_fill')">📝 Jawaban diisi AI</div>
         <div class="menu-item" onclick="jalankanAI('kkm')">⭐ Auto nilai di atas KKM</div>
         <div class="menu-item" onclick="jalankanAI('penjelasan')">📖 Penjelasan lengkap</div>
-        <div class="menu-item" onclick="bukaChatGPTWeb()">🌐 Buka ChatGPTWeb</div>
+        <div class="menu-item" onclick="bukaChatGPTWeb()">🌐 Buka ChatGPT Web</div>
 
         <div class="stealth-box">
-            <span>Modu stealth / samaran</span>
+            <span>Mode stealth / samaran</span>
             <input type="checkbox" id="stealthCheck" onchange="toggleStealth(this)" style="cursor:pointer; width:18px; height:18px;">
         </div>
 
@@ -143,29 +144,54 @@
                 soalTeks = "";
             }
 
-            if (!soalTeks || soalTeks.length < 15) {
-                soalTeks = prompt("Karena halaman tugas dilindungi, silakan salin dan tempel (paste) teks soal dari guru di sini:");
-                if (!soalTeks) return;
+            if (!soalTeks || soalTeks.trim().length < 15) {
+                soalTeks = prompt("Salin & tempel (paste) soal tugas Anda di sini:");
+                if (!soalTeks || !soalTeks.trim()) return;
             }
 
+            // Tambahkan instruksi tambahan sesuai pilihan mode
+            let instruksi = "";
+            if (tipe === 'jawab' || tipe === 'ai_fill') {
+                instruksi = "Berikan jawaban langsung dan tepat untuk soal berikut:\n\n";
+            } else if (tipe === 'penjelasan') {
+                instruksi = "Jelaskan langkah demi langkah penyelesaian soal berikut secara detail:\n\n";
+            } else if (tipe === 'ringkas') {
+                instruksi = "Buatkan ringkasan materi singkat dan jelas dari teks berikut:\n\n";
+            } else if (tipe === 'tutor') {
+                instruksi = "Bertindaklah sebagai tutor ramah. Bimbing cara menyelesaikan soal berikut:\n\n";
+            } else {
+                instruksi = "Bantu selesaikan soal atau instruksi berikut:\n\n";
+            }
+
+            const promptFinal = instruksi + soalTeks;
+
             document.getElementById('resultModal').style.display = 'flex';
-            document.getElementById('resultContent').innerText = "Sedang dianalisis oleh AI...";
+            document.getElementById('resultContent').innerText = "Sedang menganalisis jawaban dengan Gemini AI...";
 
             try {
-                // Memanggil serverless function Vercel (/api/chat) yang aman dari CORS
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ soal: soalTeks, tipe: tipe })
+                    body: JSON.stringify({ 
+                        soal: promptFinal,
+                        prompt: promptFinal,
+                        tipe: tipe 
+                    })
                 });
 
                 const data = await response.json();
                 
                 if (data.error) {
-                    throw new Error(data.error);
+                    throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error);
                 }
 
-                const jawabanAI = data.choices[0].message.content;
+                // Fleksibel membaca berbagai struktur response API
+                const jawabanAI = data.result || 
+                                  data.answer || 
+                                  data.text || 
+                                  (data.choices && data.choices[0] && (data.choices[0].text || (data.choices[0].message && data.choices[0].message.content))) || 
+                                  "Tidak ada teks jawaban dari AI.";
+
                 document.getElementById('resultContent').innerText = jawabanAI;
             } catch (error) {
                 document.getElementById('resultContent').innerText = "Gagal terhubung ke server: " + error.message;
