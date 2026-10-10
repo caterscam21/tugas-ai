@@ -24,7 +24,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Menggunakan model Gemini terbaru (Gemini 2.5 Flash)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -36,14 +37,29 @@ exports.handler = async (event, context) => {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || data.error) {
       return {
-        statusCode: response.status,
+        statusCode: response.status || 500,
         body: JSON.stringify({ error: data.error?.message || 'Gagal memanggil Gemini API' })
       };
     }
 
-    const aiAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Tidak ada jawaban dari AI.';
+    // Periksa apakah candidates ada dan valid
+    const candidate = data.candidates?.[0];
+    if (!candidate || !candidate.content?.parts?.[0]?.text) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          result: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
+          answer: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
+          text: "Maaf, respon dari AI kosong atau diblokir oleh filter keamanan.",
+          choices: [{ text: "Respon kosong", message: { content: "Maaf, respon dari AI kosong atau diblokir." } }]
+        })
+      };
+    }
+
+    const aiAnswer = candidate.content.parts[0].text;
 
     return {
       statusCode: 200,
