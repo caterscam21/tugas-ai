@@ -22,8 +22,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Menggunakan endpoint v1 yang stabil untuk model gemini-1.5-flash
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Menggunakan model gemini-3.8-flash yang valid dari list Anda
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
