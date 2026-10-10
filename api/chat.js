@@ -1,5 +1,4 @@
 exports.handler = async (event, context) => {
-  // Hanya menerima method POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
@@ -23,10 +22,9 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Menggunakan endpoint Gemini 1.5 Flash resmi (stabil & gratis)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Menggunakan endpoint v1 yang stabil untuk model gemini-1.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // Menggunakan fetch bawaan Netlify (tidak perlu require node-fetch)
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,10 +42,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Ambil jawaban dari Gemini secara aman
     const aiAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, AI tidak memberikan respons.';
 
-    // Kirim format lengkap agar langsung dibaca oleh index.html
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
