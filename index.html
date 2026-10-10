@@ -59,12 +59,12 @@
 
     <!-- Bar URL -->
     <div class="url-bar">
-        <input type="text" id="urlInput" placeholder="Tempel link tugas guru (cth: forms.gle/...)">
+        <input type="text" id="urlInput" placeholder="Tempel link tugas guru (cth: app-cbt.page.gd)">
         <button onclick="loadLink()">Buka</button>
     </div>
 
     <!-- Frame Web Tugas -->
-    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    <iframe id="browserFrame"></iframe>
 
     <!-- Tombol Melayang -->
     <div id="floatingTrigger" onclick="toggleMenu()">🤖</div>
@@ -74,21 +74,14 @@
         <div style="font-weight:bold; color:#ffd4b4; text-align:center; margin-bottom:4px; padding-bottom:4px; border-bottom:1px solid #333;">Pilih Mode AI</div>
         
         <div class="menu-item" onclick="jalankanAI('jawab')">🎯 Jawab soal otomatis</div>
-        <div class="menu-item" onclick="jalankanAI('ai_fill')">📝 Jawaban diisi AI</div>
-        <div class="menu-item" onclick="jalankanAI('kkm')">⭐ Auto nilai di atas KKM</div>
         <div class="menu-item" onclick="jalankanAI('penjelasan')">📖 Penjelasan lengkap</div>
+        <div class="menu-item" onclick="jalankanAI('input_manual')">📝 Salin & Paste Soal</div>
         <div class="menu-item" onclick="bukaChatGPTWeb()">🌐 Buka ChatGPT Web</div>
 
         <div class="stealth-box">
             <span>Mode stealth / samaran</span>
             <input type="checkbox" id="stealthCheck" onchange="toggleStealth(this)" style="cursor:pointer; width:18px; height:18px;">
         </div>
-
-        <div class="menu-item" onclick="jalankanAI('scan')">🔍 Scan Soal / Layar</div>
-        <div class="menu-item" onclick="jalankanAI('tutor')">💡 Tutor AI</div>
-        <div class="menu-item" onclick="jalankanAI('tanya')">💬 Tanya AI</div>
-        <div class="menu-item" onclick="jalankanAI('cek')">🔎 Cek Jawaban</div>
-        <div class="menu-item" onclick="jalankanAI('ringkas')">📋 Ringkasan Materi</div>
     </div>
 
     <!-- Modal Hasil AI -->
@@ -137,30 +130,29 @@
             toggleMenu();
 
             let soalTeks = "";
-            try {
-                const frame = document.getElementById('browserFrame');
-                soalTeks = frame.contentDocument.body.innerText;
-            } catch(e) {
-                soalTeks = "";
-            }
 
-            if (!soalTeks || soalTeks.trim().length < 15) {
+            // Jika memilih manual atau iframe tidak bisa diakses
+            if (tipe === 'input_manual') {
                 soalTeks = prompt("Salin & tempel (paste) soal tugas Anda di sini:");
-                if (!soalTeks || !soalTeks.trim()) return;
+            } else {
+                try {
+                    const frame = document.getElementById('browserFrame');
+                    soalTeks = frame.contentDocument.body.innerText;
+                } catch(e) {
+                    soalTeks = "";
+                }
+
+                // Jika iframe blank/cross-origin, minta input manual
+                if (!soalTeks || soalTeks.trim().length < 10) {
+                    soalTeks = prompt("Situs dilindungi (blank). Silakan Salin & Tempel (paste) soal Anda di sini:");
+                }
             }
 
-            // Tambahkan instruksi tambahan sesuai pilihan mode
-            let instruksi = "";
-            if (tipe === 'jawab' || tipe === 'ai_fill') {
-                instruksi = "Berikan jawaban langsung dan tepat untuk soal berikut:\n\n";
-            } else if (tipe === 'penjelasan') {
+            if (!soalTeks || !soalTeks.trim()) return;
+
+            let instruksi = "Berikan jawaban langsung dan tepat untuk soal berikut:\n\n";
+            if (tipe === 'penjelasan') {
                 instruksi = "Jelaskan langkah demi langkah penyelesaian soal berikut secara detail:\n\n";
-            } else if (tipe === 'ringkas') {
-                instruksi = "Buatkan ringkasan materi singkat dan jelas dari teks berikut:\n\n";
-            } else if (tipe === 'tutor') {
-                instruksi = "Bertindaklah sebagai tutor ramah. Bimbing cara menyelesaikan soal berikut:\n\n";
-            } else {
-                instruksi = "Bantu selesaikan soal atau instruksi berikut:\n\n";
             }
 
             const promptFinal = instruksi + soalTeks;
@@ -185,13 +177,7 @@
                     throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error);
                 }
 
-                // Fleksibel membaca berbagai struktur response API
-                const jawabanAI = data.result || 
-                                  data.answer || 
-                                  data.text || 
-                                  (data.choices && data.choices[0] && (data.choices[0].text || (data.choices[0].message && data.choices[0].message.content))) || 
-                                  "Tidak ada teks jawaban dari AI.";
-
+                const jawabanAI = data.result || data.answer || data.text || "Tidak ada teks jawaban dari AI.";
                 document.getElementById('resultContent').innerText = jawabanAI;
             } catch (error) {
                 document.getElementById('resultContent').innerText = "Gagal terhubung ke server: " + error.message;
