@@ -22,38 +22,54 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Menggunakan gemini-3.8-flash sesuai instruksi error Google
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    // Daftar model cadangan otomatis (jika yang utama sibuk, pindah ke bawahnya)
+    const modelsToTry = [
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash-lite'
+    ];
 
-    // Proteksi timeout 8 detik
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    let data = null;
+    let success = false;
+    let lastError = '';
 
-    let response;
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
-        }),
-        signal: controller.signal
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return {
-        statusCode: 504,
-        body: JSON.stringify({ error: 'Koneksi ke server Gemini timeout. Silakan coba lagi.' })
-      };
+    for (const model of modelsToTry) {
+      const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }]
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        data = await response.json();
+
+        if (response.ok && !data.error) {
+          success = true;
+          break; // Berhasil, keluar dari loop
+        } else {
+          lastError = data.error?.message || `Model ${model} sibuk`;
+          continue; // Coba model berikutnya
+        }
+      } catch (err) {
+        lastError = err.message;
+        continue;
+      }
     }
-    clearTimeout(timeoutId);
 
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
+    if (!success) {
       return {
-        statusCode: response.status || 500,
-        body: JSON.stringify({ error: data.error?.message || 'Gagal memanggil Gemini API' })
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Semua model Gemini sedang sibuk. Silakan coba beberapa saat lagi.' })
       };
     }
 
