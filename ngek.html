@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Ujian / Tugas Ketat dengan AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
+        
+        .container { max-width: 600px; margin: 0 auto; background: #1e293b; padding: 24px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h2 { color: #818cf8; margin-bottom: 8px; }
+        .warning-box { background: #7f1d1d; color: #fca5a5; padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 20px; border: 1px solid #991b1b; }
+        
+        .soal-item { margin-bottom: 20px; background: #334155; padding: 14px; border-radius: 8px; }
+        .soal-item p { font-weight: bold; margin-bottom: 8px; }
+        label { display: block; font-size: 14px; margin-bottom: 6px; cursor: pointer; }
+
+        /* Tombol Melayang AI */
+        #floatingTrigger {
+            position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px;
+            background: #6366f1; color: white; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 24px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 9999; user-select: none;
+            transition: transform 0.2s;
+        }
+        #floatingTrigger:active { transform: scale(0.9); }
+
+        /* Panel Menu AI */
+        #menuContainer {
+            position: fixed; bottom: 90px; right: 20px; width: 260px;
+            background: #1e293b; border: 1px solid #475569; border-radius: 12px;
+            padding: 10px; display: none; flex-direction: column; gap: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 9998;
+        }
+        .menu-item {
+            padding: 10px 12px; background: #334155; border-radius: 6px; font-size: 13px;
+            cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: space-between;
+        }
+        .menu-item:hover { background: #475569; }
+
+        /* Modal Hasil AI */
+        #resultModal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 420px; max-height: 80vh; background: #1e293b;
+            border: 1px solid #475569; border-radius: 12px; padding: 16px; display: none;
+            flex-direction: column; z-index: 10000; box-shadow: 0 12px 32px rgba(0,0,0,0.8);
+        }
+        #resultModal h3 { font-size: 16px; margin-bottom: 10px; color: #818cf8; border-bottom: 1px solid #475569; padding-bottom: 8px; }
+        #resultContent { flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px; background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #334155; }
+        .close-btn { padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Simulasi Ujian Ketat (Anti-Keluar)</h2>
+        <div class="warning-box" id="warningLog">
+            ⚠️ Perhatian: Jangan keluar dari halaman atau berpindah tab! Pelanggaran tercatat: <span id="violationCount">0</span>
+        </div>
+
+        <!-- Contoh Soal Ujian -->
+        <div class="soal-item">
+            <p>1. Apa ibu kota negara Australia?</p>
+            <label><input type="radio" name="soal1"> A. Sydney</label>
+            <label><input type="radio" name="soal1"> B. Melbourne</label>
+            <label><input type="radio" name="soal1"> C. Canberra</label>
+            <label><input type="radio" name="soal1"> D. Perth</label>
+        </div>
+
+        <div class="soal-item">
+            <p>2. Rumus kimia dari air adalah...</p>
+            <label><input type="radio" name="soal2"> A. CO2</label>
+            <label><input type="radio" name="soal2"> B. H2O</label>
+            <label><input type="radio" name="soal2"> C. NaCl</label>
+            <label><input type="radio" name="soal2"> D. O2</label>
+        </div>
+    </div>
+
+    <!-- Tombol Melayang AI -->
+    <div id="floatingTrigger" onclick="toggleMenu()">🤖</div>
+
+    <!-- Panel Menu Pilihan AI -->
+    <div id="menuContainer">
+        <div style="font-weight:bold; color:#ffd4b4; text-align:center; margin-bottom:4px; padding-bottom:4px; border-bottom:1px solid #475569;">Pilih Mode AI</div>
+        <div class="menu-item" onclick="jalankanAI('jawab')">🎯 Jawab soal otomatis</div>
+        <div class="menu-item" onclick="jalankanAI('penjelasan')">📖 Penjelasan lengkap</div>
+        <div class="menu-item" onclick="jalankanAI('tutor')">💡 Tutor AI</div>
+    </div>
+
+    <!-- Modal Hasil AI -->
+    <div id="resultModal">
+        <h3>Hasil Asisten AI</h3>
+        <div id="resultContent">Memproses jawaban...</div>
+        <button class="close-btn" onclick="tutupModal()">Tutup</button>
+    </div>
+
+    <script>
+        // --- 1. SCRIPT ANTI-KELUAR TAB (Simulasi Ujian Ketat) ---
+        let violationCount = 0;
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) {
+                violationCount++;
+                document.getElementById('violationCount').innerText = violationCount;
+                alert("PPERINGATAN! Anda terdeteksi meninggalkan halaman ujian!");
+            }
+        });
+
+        window.addEventListener("blur", function() {
+            // Merekam saat mouse/fokus keluar dari jendela browser
+            console.log("Fokus jendela hilang.");
+        });
+
+        // --- 2. SCRIPT ASISTEN AI ---
+        function toggleMenu() {
+            const menu = document.getElementById('menuContainer');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function tutupModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        async function jalankanAI(tipe) {
+            toggleMenu();
+
+            // Mengambil seluruh teks soal di halaman secara otomatis
+            let soalTeks = document.body.innerText || "";
+
+            if (!soalTeks || soalTeks.length < 10) {
+                soalTeks = prompt("Masukkan soal:");
+                if (!soalTeks) return;
+            }
+
+            let instruksi = "Berikan jawaban langsung dan tepat untuk soal-soal ujian berikut:\n\n";
+            const promptFinal = instruksi + soalTeks;
+
+            document.getElementById('resultModal').style.display = 'flex';
+            document.getElementById('resultContent').innerText = "Sedang menganalisis jawaban dengan Gemini AI...";
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        soal: promptFinal,
+                        prompt: promptFinal,
+                        tipe: tipe 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error);
+                }
+
+                const jawabanAI = data.result || data.answer || data.text || "Tidak ada jawaban.";
+                document.getElementById('resultContent').innerText = jawabanAI;
+            } catch (error) {
+                document.getElementById('resultContent').innerText = "Gagal terhubung ke server: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
