@@ -60,7 +60,14 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         result: aiAnswer,
         answer: aiAnswer,
-        text: aiAnswer
+        text: aiAnswer,
+        // Properti ini wajib ada agar index.html tidak error "reading '0'"
+        choices: [
+          {
+            text: aiAnswer,
+            message: { content: aiAnswer }
+          }
+        ]
       })
     };
   } catch (err) {
@@ -70,3 +77,4 @@ exports.handler = async (event, context) => {
     };
   }
 };
+        
